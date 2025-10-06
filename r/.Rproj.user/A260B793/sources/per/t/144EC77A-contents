@@ -1,0 +1,5 @@
+fd <- read.csv(here("r", "auxiliary", "forecast_dates.csv"))
+
+here::i_am("../.gitignore")
+
+here()
