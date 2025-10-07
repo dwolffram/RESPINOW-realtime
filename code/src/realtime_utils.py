@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import pandas as pd
 from darts import TimeSeries, concatenate
@@ -26,7 +28,9 @@ def load_latest_series(indicator="sari"):
         ts.static_covariates.age_group.index,
         f"{source}-{indicator}-" + ts.static_covariates.age_group,
     )
-    ts = ts.with_columns_renamed(f"{source}-{indicator}-00+", f"{source}-{indicator}-DE")
+    ts = ts.with_columns_renamed(
+        f"{source}-{indicator}-00+", f"{source}-{indicator}-DE"
+    )
 
     return ts
 
@@ -62,7 +66,9 @@ def load_target_series(indicator="sari", as_of=None, age_group=None):
     )
 
     if age_group is None or age_group == "00+":
-        ts_target = ts_target.with_columns_renamed(f"{source}-{indicator}-00+", f"{source}-{indicator}-DE")
+        ts_target = ts_target.with_columns_renamed(
+            f"{source}-{indicator}-00+", f"{source}-{indicator}-DE"
+        )
 
     return ts_target
 
@@ -107,13 +113,19 @@ def load_nowcast(
         )
 
         nowcast_age = concatenate(nowcast_age, axis="sample")
-        nowcast_age.static_covariates.drop(columns=["quantile"], inplace=True, errors="ignore")
-        nowcast_age = nowcast_age.with_columns_renamed(nowcast_age.components, [f"{source}-{indicator}-" + age])
+        nowcast_age.static_covariates.drop(
+            columns=["quantile"], inplace=True, errors="ignore"
+        )
+        nowcast_age = nowcast_age.with_columns_renamed(
+            nowcast_age.components, [f"{source}-{indicator}-" + age]
+        )
 
         all_nowcasts.append(nowcast_age)
 
     all_nowcasts = concatenate(all_nowcasts, axis="component")
-    all_nowcasts = all_nowcasts.with_columns_renamed(f"{source}-{indicator}-00+", f"{source}-{indicator}-DE")
+    all_nowcasts = all_nowcasts.with_columns_renamed(
+        f"{source}-{indicator}-00+", f"{source}-{indicator}-DE"
+    )
 
     return all_nowcasts
 
@@ -131,7 +143,10 @@ def make_target_paths(target_series, nowcast):
     # there is one entry per quantile level
     target_list = [
         concatenate(
-            [target_temp[age].append_values(nowcast[age].univariate_values(sample=i)) for age in nowcast.components],
+            [
+                target_temp[age].append_values(nowcast[age].univariate_values(sample=i))
+                for age in nowcast.components
+            ],
             axis="component",
         )
         for i in range(nowcast.n_samples)
@@ -144,7 +159,8 @@ def load_rt(indicator="sari", preprocessed=False):
     """Load reporting triangle for a given indicator."""
     source = SOURCE_DICT[indicator]
     rt = pd.read_csv(
-        ROOT / f"data/reporting_triangle-{source}-{indicator}{'-preprocessed' if preprocessed else ''}.csv",
+        ROOT
+        / f"data/reporting_triangle-{source}-{indicator}{'-preprocessed' if preprocessed else ''}.csv",
         parse_dates=["date"],
     )
 
@@ -164,9 +180,15 @@ def target_as_of(rt, date):
 
     # in column 'value_1w' the last entry is set to nan, in column 'value_2w' the last two entries, etc.
     rt_temp = (
-        rt_temp.groupby(["location", "age_group"]).apply(set_last_n_values_to_nan, include_groups=False).reset_index()
+        rt_temp.groupby(["location", "age_group"])
+        .apply(set_last_n_values_to_nan, include_groups=False)
+        .reset_index()
     )
-    rt_temp["value"] = rt_temp[["value_0w", "value_1w", "value_2w", "value_3w", "value_4w"]].sum(axis=1).astype(int)
+    rt_temp["value"] = (
+        rt_temp[["value_0w", "value_1w", "value_2w", "value_3w", "value_4w"]]
+        .sum(axis=1)
+        .astype(int)
+    )
 
     return rt_temp[["location", "age_group", "year", "week", "date", "value"]]
 
@@ -174,7 +196,9 @@ def target_as_of(rt, date):
 def get_preceding_thursday(date):
     """Returns the date of the preceding Thursday. If 'date' is itself a Thursday, 'date' is returned."""
     date = pd.Timestamp(date)  # to also accept dates given as strings
-    return date - pd.Timedelta(days=(date.weekday() - 3) % 7)  # weekday of Thursday is 3
+    return date - pd.Timedelta(
+        days=(date.weekday() - 3) % 7
+    )  # weekday of Thursday is 3
 
 
 def load_realtime_training_data(as_of=None, drop_incomplete=True):
@@ -182,7 +206,9 @@ def load_realtime_training_data(as_of=None, drop_incomplete=True):
     target_sari = load_target_series("sari", as_of)
     latest_sari = load_latest_series("sari")
 
-    ts_sari = concatenate([latest_sari.drop_after(target_sari.start_time()), target_sari])
+    ts_sari = concatenate(
+        [latest_sari.drop_after(target_sari.start_time()), target_sari]
+    )
 
     # load are data
     target_are = load_target_series("are", as_of)
@@ -195,3 +221,33 @@ def load_realtime_training_data(as_of=None, drop_incomplete=True):
 
     else:
         return ts_sari, ts_are
+
+
+def wait_for_data(interval_min=30, max_wait_hours=24):
+    """Wait until data/reporting_triangle-icosari-sari.csv is up to date."""
+    path = ROOT / "data/reporting_triangle-icosari-sari.csv"
+    current_date = pd.Timestamp.now().date()
+    expected_date = str(
+        (get_preceding_thursday(current_date) - pd.Timedelta(days=4)).date()
+    )
+
+    waited_min = 0
+    max_wait_min = max_wait_hours * 60
+
+    while True:
+        df = pd.read_csv(path)
+        last_date = df["date"].iloc[-1]
+        print(f"🔍 Last date in data: {last_date} | Expected: {expected_date}")
+
+        if last_date == expected_date:
+            print("✅ Data is up to date.")
+            return
+
+        if waited_min >= max_wait_min:
+            raise TimeoutError(
+                f"Data not up to date after {max_wait_hours} hours (last_date={last_date}, expected={expected_date})."
+            )
+
+        print(f"⏳ Not updated yet. Waiting {interval_min} minutes...")
+        time.sleep(interval_min * 60)
+        waited_min += interval_min

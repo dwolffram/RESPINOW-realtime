@@ -7,7 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "darts>=0.38.0",
     "epiweeks>=2.3.0",
+    "gitpython>=3.1.45",
     "numpy>=2.3.3",
     "pandas>=2.3.3",
+    "pygithub>=2.8.1",
     "u8darts[all]>=0.38.0",
 ]

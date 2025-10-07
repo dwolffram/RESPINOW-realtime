@@ -8,13 +8,13 @@ from config import MODEL_NAMES, QUANTILES, ROOT
 
 # Explicit mapping from Darts rounded quantile labels to our desired values
 Q_MAP = {
-    "q0.03": "0.025",
-    "q0.10": "0.1",
-    "q0.25": "0.25",
-    "q0.50": "0.5",
-    "q0.75": "0.75",
-    "q0.90": "0.9",
-    "q0.97": "0.975",
+    "q0.025": "0.025",
+    "q0.100": "0.1",
+    "q0.250": "0.25",
+    "q0.500": "0.5",
+    "q0.750": "0.75",
+    "q0.900": "0.9",
+    "q0.975": "0.975",
 }
 
 
@@ -35,7 +35,6 @@ def reshape_forecast(ts_forecast, nowcast=False, deterministic=False):
     """
     Transforms a forecast from TimeSeries format to Hub format.
     """
-
     if deterministic:
         df_temp = ts_forecast.pd_dataframe().reset_index().melt(id_vars="date")
     else:
