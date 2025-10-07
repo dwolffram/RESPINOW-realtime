@@ -225,7 +225,7 @@ def load_realtime_training_data(as_of=None, drop_incomplete=True):
 
 def wait_for_data(interval_min=30, max_wait_hours=24):
     """Wait until data/reporting_triangle-icosari-sari.csv is up to date."""
-    path = ROOT / "data/reporting_triangle-icosari-sari.csv"
+    path = "https://raw.githubusercontent.com/KITmetricslab/RESPINOW-Hub/refs/heads/main/data/icosari/sari/reporting_triangle-icosari-sari.csv"
     current_date = pd.Timestamp.now().date()
     expected_date = str(
         (get_preceding_thursday(current_date) - pd.Timedelta(days=4)).date()
@@ -251,3 +251,21 @@ def wait_for_data(interval_min=30, max_wait_hours=24):
         print(f"⏳ Not updated yet. Waiting {interval_min} minutes...")
         time.sleep(interval_min * 60)
         waited_min += interval_min
+        
+
+def download_latest_data():
+    base = "https://raw.githubusercontent.com/KITmetricslab/RESPINOW-Hub/refs/heads/main/data"
+    sources = [("icosari", "sari"), ("agi", "are")]
+    files = [
+        "latest_data-{}-{}.csv",
+        "target-{}-{}.csv",
+        "reporting_triangle-{}-{}.csv",
+        "reporting_triangle-{}-{}-preprocessed.csv",
+    ]
+
+    urls = [f"{base}/{src}/{disease}/{file.format(src, disease)}" for src, disease in sources for file in files]
+
+    for u in urls:
+        pd.read_csv(u).to_csv(ROOT / f"data/{u.split('/')[-1]}", index=False)
+    
+    print("✅ All files successfully downloaded.")

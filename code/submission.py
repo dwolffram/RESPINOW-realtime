@@ -6,7 +6,7 @@ from github import Auth, Github
 
 from config import ROOT
 from src.forecasting import generate_forecasts
-from src.realtime_utils import get_preceding_thursday, wait_for_data
+from src.realtime_utils import get_preceding_thursday, wait_for_data, download_latest_data
 
 
 # --- CONFIG ---
@@ -21,6 +21,9 @@ BRANCH = f"submission/{forecast_date}"
 
 # --- Wait until data is updated ---
 wait_for_data(interval_min=30, max_wait_hours=24)
+
+# --- Download data ---
+download_latest_data()
 
 
 # --- 1️⃣ Generate forecasts ---
