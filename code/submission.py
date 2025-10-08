@@ -7,7 +7,11 @@ from github import Auth, Github
 from config import ROOT
 from src.forecasting import generate_forecasts
 from src.realtime_utils import get_preceding_thursday, wait_for_data, download_latest_data
+from src.r_utils import detect_rscript
+import subprocess
 
+# Locate Rscript matching the required version
+RSCRIPT = detect_rscript()
 
 # --- CONFIG ---
 forecast_date = str(get_preceding_thursday(pd.Timestamp.now().date()).date())
@@ -18,6 +22,8 @@ TARGET_REPO = "dwolffram/RESPINOW-Hub"  # your fork
 BASE = "main"
 BRANCH = f"submission/{forecast_date}"
 
+repo = Repo(ROOT)
+
 
 # --- Wait until data is updated ---
 wait_for_data(interval_min=30, max_wait_hours=24)
@@ -26,23 +32,39 @@ wait_for_data(interval_min=30, max_wait_hours=24)
 download_latest_data()
 
 
-# --- 1️⃣ Generate forecasts ---
+# --- Generate nowcasts ---
+subprocess.run(
+    [RSCRIPT, ROOT / "r" / "nowcasting" / "nowcasting.R"],
+    cwd=ROOT,  # start R in the repo root so .Rprofile & renv auto-activate
+)
+
+
+# --- Commit nowcasts locally (GitPython) ---
+repo.git.add("nowcasts")
+if repo.is_dirty():
+    repo.index.commit(f"Add nowcasts for {forecast_date}")
+    repo.remote("origin").push()
+    print("✅ Committed and pushed nowcasts to RESPINOW-realtime repository.")
+else:
+    print("⚠️ No new or modified nowcast files detected — nothing to commit.")
+
+
+# --- Generate forecasts ---
 generate_forecasts("lightgbm", forecast_date, data_mode="no_covariates", modes="coupling")
 generate_forecasts("tsmixer", forecast_date, data_mode="no_covariates", modes="coupling")
 
 
-# --- 2️⃣ Commit forecasts locally (GitPython) ---
-repo = Repo(ROOT)
+# --- Commit forecasts locally (GitPython) ---
 repo.git.add("forecasts")
 if repo.is_dirty():
     repo.index.commit(COMMIT_MSG)
     repo.remote("origin").push()
     print("✅ Committed and pushed forecasts to RESPINOW-realtime repository.")
 else:
-    print("⚠️ No changes to commit.")
+    print("⚠️ No new or modified forecast files detected — nothing to commit.")
 
 
-# --- 3️⃣ Submit to Hub (PyGithub) ---
+# --- Submit to Hub (PyGithub) ---
 auth = Auth.Token(os.environ["GITHUB_TOKEN"])
 g = Github(auth=auth)
 
