@@ -34,8 +34,17 @@ download_latest_data()
 
 # --- Generate nowcasts ---
 subprocess.run(
-    [RSCRIPT, ROOT / "r" / "nowcasting" / "nowcasting.R"],
-    cwd=ROOT,  # start R in the repo root so .Rprofile & renv auto-activate
+    [
+        RSCRIPT,
+        "--vanilla",
+        "-e",
+        f'setwd("{(ROOT / "r").as_posix()}"); '
+        'renv::activate(); '
+        'renv::restore(prompt = FALSE); '
+        'source("nowcasting/nowcasting.R")'
+    ],
+    cwd=ROOT,
+    check=True,
 )
 
 

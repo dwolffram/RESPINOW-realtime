@@ -4,6 +4,10 @@
 # set language to English
 Sys.setlocale("LC_ALL", "C")
 
+
+library(here)
+here::i_am("r/nowcasting/nowcasting.R")
+
 # read in functions for the nowcasting method
 source(here("r", "nowcasting", "functions_nowcasting.R"))
 
