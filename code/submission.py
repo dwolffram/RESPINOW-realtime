@@ -61,14 +61,18 @@ else:
 
 
 # --- Submit to Hub (PyGithub) ---
-auth = Auth.Token(os.environ["GITHUB_TOKEN"])
+auth = Auth.Token(os.environ["GITHUB_TOKEN"]) # PAT respinow-realtime
 g = Github(auth=auth)
 
 dst_repo = g.get_repo(TARGET_REPO)
 upstream = g.get_repo(UPSTREAM_REPO)
 
+# sync fork
+dst_repo.merge_upstream("main")
+
 # create temp branch in your fork
 base_ref = dst_repo.get_git_ref(f"heads/{BASE}")
+# base_ref = upstream.get_git_ref(f"heads/{BASE}")
 dst_repo.create_git_ref(ref=f"refs/heads/{NOWCAST_BRANCH}", sha=base_ref.object.sha)
 
 # upload CSVs
@@ -124,6 +128,9 @@ g = Github(auth=auth)
 
 dst_repo = g.get_repo(TARGET_REPO)
 upstream = g.get_repo(UPSTREAM_REPO)
+
+# sync fork
+dst_repo.merge_upstream("main")
 
 # create temp branch in your fork
 base_ref = dst_repo.get_git_ref(f"heads/{BASE}")
