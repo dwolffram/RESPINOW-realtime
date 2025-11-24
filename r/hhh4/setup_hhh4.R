@@ -10,9 +10,13 @@ data_source <- "icosari"
 disease <- "sari"
 
 # dates for which to produce nowcasts (stored centrally):
-forecast_dates <- as.Date(
-  read.csv(here("r", "auxiliary", "forecast_dates.csv"))$forecast_date
-)
+# forecast_dates <- as.Date(
+#   read.csv(here("r", "auxiliary", "forecast_dates.csv"))$forecast_date
+# )
+
+# Select most recent Thursday as forecast_date:
+forecast_dates0 <- Sys.Date() - 0:6
+forecast_dates <- forecast_dates0[weekdays(forecast_dates0) == "Thursday"]
 
 # which quantile levels are contained in the nowcast?
 quantile_levels_nowcast <- seq(2.5, 97.5, 2.5) / 100

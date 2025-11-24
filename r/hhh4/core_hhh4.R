@@ -35,10 +35,10 @@ for (i in seq_along(forecast_dates)) {
   # read in nowcast:
   nc <- read.csv(here(
     "nowcasts",
-    "KIT-simple_nowcast",
+    "simple_nowcast",
     paste0(
       forecast_date,
-      "-icosari-sari-KIT-simple_nowcast.csv"
+      "-icosari-sari-simple_nowcast.csv"
     )
   ))
   # shuffle quantiles per age group, horizon and location if desired:
