@@ -9,7 +9,7 @@
 # - hhh4_vincentization
 
 # set language to English
-Sys.setlocale("LC_ALL", "C")
+# Sys.setlocale("LC_ALL", "C")
 
 ###############################################################
 #  if last observation is skipped: need to predict one additional week.
@@ -33,19 +33,38 @@ for (i in seq_along(forecast_dates)) {
   cat(as.character(forecast_dates[i]), "\n")
 
   # read in nowcast:
-  nc <- read.csv(here(
+  # nc <- read.csv(here(
+  #   "nowcasts",
+  #   "simple_nowcast",
+  #   paste0(
+  #     forecast_date,
+  #     "-",
+  #     data_source,
+  #     "-",
+  #     disease,
+  #     "-",
+  #     "simple_nowcast.csv"
+  #   )
+  # ))
+
+  # Build nowcast path
+  nc_path <- here(
     "nowcasts",
     "simple_nowcast",
     paste0(
-      forecast_date,
-      "-",
-      data_source,
-      "-",
-      disease,
-      "-",
+      forecast_date, "-",
+      data_source, "-",
+      disease, "-",
       "simple_nowcast.csv"
     )
-  ))
+  ) 
+
+  # Wait until the file exists
+  wait_for_file(nc_path)
+
+  # Now safely read it
+  nc <- read.csv(nc_path)  
+    
   # shuffle quantiles per age group, horizon and location if desired:
   if (shuffle_paths) {
     nc <- shuffle_quantiles(nc)

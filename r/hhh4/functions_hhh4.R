@@ -8,6 +8,7 @@
 #' @param quantile_levels_nowcast The nowcast quantile levels corresponding to the columns
 #' @param quantile_levels The forecast quantile levels to be generated
 #' @param type The type of aggregation to be performed: "linear pool" or "quantile average"
+
 aggregate_forecasts_to_quantiles <- function(
   mu_matrix,
   var_matrix,
@@ -201,4 +202,27 @@ format_forecasts <- function(
   }
 
   return(all_formatted)
+}
+
+wait_for_file <- function(path, timeout = 180, interval = 1) {
+  t0 <- Sys.time()
+  waiting <- FALSE
+
+  while (!file.exists(path)) {
+
+    if (!waiting) {
+      message("⏳ Waiting for nowcast file...")
+      waiting <- TRUE
+    }
+
+    cat("."); flush.console()
+
+    if (as.numeric(Sys.time() - t0, units = "secs") > timeout)
+      stop("❌ File did not appear within timeout: ", path)
+
+    Sys.sleep(interval)
+  }
+
+  if (waiting) cat("\n")
+  message("✅ Nowcast file detected: ", path)
 }

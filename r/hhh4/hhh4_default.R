@@ -2,6 +2,12 @@
 # Author: Johannes Bracher, johannes.bracher@kit.edu
 
 ######################################################
+# set language to English
+Sys.setlocale("LC_ALL", "C")
+
+library(here)
+here::i_am("r/hhh4/hhh4_default.R")
+
 # Settings specific to this file:
 label <- "hhh4-coupling"
 # not excluding the COVID period in this file
