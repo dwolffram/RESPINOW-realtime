@@ -6,8 +6,8 @@
 # Global settings:
 
 # define data sources and disease:
-data_source <- "icosari"
-disease <- "sari"
+# data_source <- "icosari"
+# disease <- "sari"
 
 # dates for which to produce nowcasts (stored centrally):
 # forecast_dates <- as.Date(

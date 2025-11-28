@@ -13,6 +13,28 @@ shuffle_paths <- FALSE
 # last observation is not omitted
 skip_last = FALSE
 
+
+# define data sources and disease:
+if (interactive()) {
+  # Running in RStudio → pick manually
+  disease <- "are"    # <- change here when testing
+} else {
+  # Running via Rscript → use CLI argument or default (e.g. Rscript nowcasting.R are)
+  args <- commandArgs(trailingOnly = TRUE) # Read command line arguments
+  disease <- ifelse(length(args) >= 1, args[1], "sari")
+}
+
+# map disease → data_source
+data_source <- switch(
+  disease,
+  "sari" = "icosari",
+  "are"  = "agi",
+  stop("Unknown disease: ", disease)
+)
+
+message("Disease: ", disease)
+message("Data source: ", data_source)
+
 ######################################################
 # get packages and functions:
 library(surveillance)

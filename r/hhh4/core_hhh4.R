@@ -38,7 +38,12 @@ for (i in seq_along(forecast_dates)) {
     "simple_nowcast",
     paste0(
       forecast_date,
-      "-icosari-sari-simple_nowcast.csv"
+      "-",
+      data_source,
+      "-",
+      disease,
+      "-",
+      "simple_nowcast.csv"
     )
   ))
   # shuffle quantiles per age group, horizon and location if desired:
