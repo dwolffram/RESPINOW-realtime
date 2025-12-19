@@ -2,15 +2,15 @@ from src.silence import silence
 
 silence()
 
-from pathlib import Path
-from typing import Dict, List, Sequence, Tuple, Union
+from pathlib import Path  # noqa: E402
+from typing import Dict, List, Sequence, Tuple, Union  # noqa: E402
 
-import pandas as pd
-from darts import concatenate
-from darts.models import LightGBMModel, TSMixerModel
-from tqdm import tqdm
+import pandas as pd  # noqa: E402
+from darts import concatenate  # noqa: E402
+from darts.models import LightGBMModel, TSMixerModel  # noqa: E402
+from tqdm import tqdm  # noqa: E402
 
-from config import (
+from config import (  # noqa: E402
     ALLOWED_DATA_MODES,
     ALLOWED_MODELS,
     ALLOWED_MODES,
@@ -23,17 +23,18 @@ from config import (
     RANDOM_SEEDS,
     ROOT,
     SHARED_ARGS,
+    SOURCE_DICT,
     DataMode,
     Mode,
     ModelName,
 )
-from src.load_data import encode_static_covariates, reshape_forecast
-from src.realtime_utils import (
+from src.load_data import encode_static_covariates, reshape_forecast  # noqa: E402
+from src.realtime_utils import (  # noqa: E402
     load_nowcast,
     load_realtime_training_data,
     make_target_paths,
 )
-from src.tuning import exclude_covid_weights, get_best_parameters
+from src.tuning import exclude_covid_weights, get_best_parameters  # noqa: E402
 
 MODEL_REGISTRY = {
     "lightgbm": LightGBMModel,
@@ -159,11 +160,12 @@ def fit_model(model, targets, covariates, params, use_covariates, use_encoders, 
 
 
 def print_training_config(
-    *, model_name, use_covariates, sample_weight, modes, seeds, params, wis, forecast_dates
+    *, model_name, target, use_covariates, sample_weight, modes, seeds, params, wis, forecast_dates
 ) -> None:
     print(
         f"\n=== Training config ===\n"
         f"  model          : {model_name}\n"
+        f"  target          : {target}\n"
         f"  use_covariates : {use_covariates}\n"
         f"  sample_weight  : {sample_weight}\n"
         f"  modes          : {list(modes)}\n"
@@ -181,10 +183,10 @@ def generate_forecasts(
     model: ModelName,
     forecast_dates: Union[str, Sequence[str]] = FORECAST_DATES,
     *,
+    target: str = "sari",
     modes: Union[Mode, Sequence[Mode]] = ("naive", "coupling", "discard", "oracle"),
     data_mode: DataMode = "all",
     seeds=RANDOM_SEEDS,
-    save_models: bool = False,
 ) -> None:
     """
     Train and generate forecasts for one or many forecast dates.
@@ -203,14 +205,14 @@ def generate_forecasts(
         "lightgbm" or "tsmixer".
     forecast_dates : str or sequence[str], default=FORECAST_DATES
         One date (ISO) or a list of dates.
+    target: str, default="sari"
+        Indicator to forecast. One of {"sari", "are"}.
     modes : Mode or sequence[Mode], default=("naive","coupling","discard","oracle")
         Strategies for handling incomplete recent data.
     data_mode : DataMode, default="all"
         One of {"all", "no_covariates", "no_covid"}.
     seeds : sequence[int], default=RANDOM_SEEDS
         Random seeds for repeated training.
-    save_models : bool, default=False
-        If True, saves each trained model (clean=True) under ROOT/models/<date>/...
     verbose : bool, default=True
         If True, prints the training configuration once.
 
@@ -229,7 +231,10 @@ def generate_forecasts(
         raise ValueError(f"Invalid mode(s): {modes!r}. Allowed values: {sorted(ALLOWED_MODES)}")
     if data_mode not in ALLOWED_DATA_MODES:
         raise ValueError(f"Invalid data_mode: {data_mode!r}. Allowed values: {sorted(ALLOWED_DATA_MODES)}")
+    if target not in ["sari", "are"]:
+        raise ValueError(f"Invalid target: {target!r}. Allowed values: ['sari', 'are']")
 
+    source = SOURCE_DICT[target]
     model_name = model if data_mode == "all" else f"{model}-{data_mode}"
     use_covariates, sample_weight = DATA_MODE_CONFIG[data_mode]
 
@@ -241,6 +246,7 @@ def generate_forecasts(
 
     print_training_config(
         model_name=model_name,
+        target=target,
         use_covariates=use_covariates,
         sample_weight=sample_weight,
         modes=modes,
@@ -253,7 +259,7 @@ def generate_forecasts(
     # Load complete targets once if any 'oracle' requested
     complete_targets = None
     if "oracle" in modes:
-        complete_targets, _ = load_realtime_training_data()
+        complete_targets, _ = load_realtime_training_data(target=target)
 
     failed: List[Tuple[str, str]] = []
 
@@ -262,27 +268,22 @@ def generate_forecasts(
         print(f"→ {fd}")
         try:
             # Training data (complete up to fd) + weights
-            targets_train, covars_train = load_realtime_training_data(as_of=fd, drop_incomplete=True)
+            targets_train, covars_train = load_realtime_training_data(target=target, as_of=fd, drop_incomplete=True)
             weights = exclude_covid_weights(targets_train) if sample_weight == "no-covid" else sample_weight
 
             # As-of data (may include incomplete values)
-            targets_asof, covars_asof = load_realtime_training_data(as_of=fd, drop_incomplete=False)
+            targets_asof, covars_asof = load_realtime_training_data(target=target, as_of=fd, drop_incomplete=False)
 
             # Nowcast per date for coupling/discard
             ts_now = None
             if any(m in ("coupling", "discard") for m in modes):
-                ts_now = load_nowcast(forecast_date=fd)
+                ts_now = load_nowcast(forecast_date=fd, indicator=target)
 
             # Collect per-seed runs for each mode
             per_mode_runs: Dict[Mode, List[pd.DataFrame]] = {m: [] for m in modes}
 
             for seed in tqdm(seeds, desc=f"{fd}", leave=False):
                 mdl = fit_model(model, targets_train, covars_train, params, use_covariates, use_encoders, weights, seed)
-
-                if save_models:
-                    model_path = ROOT / "models" / fd / f"{fd}-{model_name}-{seed}.pkl"
-                    model_path.parent.mkdir(parents=True, exist_ok=True)
-                    mdl.save(str(model_path), clean=True)
 
                 covars_for_predict = None if not getattr(mdl, "uses_past_covariates", True) else covars_asof
 
@@ -329,7 +330,7 @@ def generate_forecasts(
             for m in modes:
                 df = aggregate_runs(per_mode_runs[m])
                 out_dir = ROOT / "forecasts" / f"{model_name}-{m}"
-                fname = f"{fd}-icosari-sari-{model_name}-{m}.csv"
+                fname = f"{fd}-{source}-{target}-{model_name}-{m}.csv"
                 save_csv(df, out_dir, fname)
 
         except Exception as e:

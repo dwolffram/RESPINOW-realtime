@@ -96,6 +96,7 @@ def exclude_covid_weights(targets):
 
 def get_best_parameters(
     model: ModelName,
+    target: str = "sari",
     use_covariates: bool | None = None,
     sample_weight: str | None = None,
     clean: bool = False,
@@ -108,6 +109,7 @@ def get_best_parameters(
 
     Args:
         model (ModelName): Model name used to construct the gridsearch CSV file path.
+        target (str): Indicator to forecast. One of {"sari", "are"}.
         use_covariates (bool | None): Filter rows by this value if specified.
         sample_weight (str | None): Filter rows by this value if specified.
         clean (bool): If True, strips helper keys and normalizes params
@@ -120,8 +122,11 @@ def get_best_parameters(
     """
     if model not in ALLOWED_MODELS:
         raise ValueError(f"Unknown model: {model}")
+    if target not in {"sari", "are"}:
+        raise ValueError(f"Invalid target: {target!r}. Allowed values: ['sari', 'are']")
 
-    gs = pd.read_csv(ROOT / "results" / "tuning" / f"gridsearch_{model}.csv")
+    suffix = "_are" if target == "are" else ""
+    gs = pd.read_csv(ROOT / "results" / "tuning" / f"gridsearch_{model}{suffix}.csv")
 
     # Optional filtering
     if use_covariates is not None and "use_covariates" in gs.columns:
