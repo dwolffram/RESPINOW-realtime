@@ -201,26 +201,35 @@ def get_preceding_thursday(date):
     )  # weekday of Thursday is 3
 
 
-def load_realtime_training_data(as_of=None, drop_incomplete=True):
-    # load sari data
-    target_sari = load_target_series("sari", as_of)
-    latest_sari = load_latest_series("sari")
+def load_realtime_series(target, as_of=None):
+    """Load a single realtime TimeSeries (target + latest)."""
+    target_series = load_target_series(target, as_of)
+    latest_series = load_latest_series(target)
 
-    ts_sari = concatenate(
-        [latest_sari.drop_after(target_sari.start_time()), target_sari]
+    return concatenate(
+        [latest_series.drop_after(target_series.start_time()), target_series]
     )
 
-    # load are data
-    target_are = load_target_series("are", as_of)
-    latest_are = load_latest_series("are")
 
-    ts_are = concatenate([latest_are.drop_after(target_are.start_time()), target_are])
+def load_realtime_training_data(target="sari", as_of=None, drop_incomplete=True):
+    """
+    Load realtime training data.
+
+    If target == "sari", use "are" as covariate.
+    If target == "are", use "sari" as covariate.
+    """
+    if target not in {"sari", "are"}:
+        raise ValueError(f"Unsupported target: {target}")
+
+    covariate = "are" if target == "sari" else "sari"
+
+    ts_target = load_realtime_series(target, as_of)
+    ts_covariates = load_realtime_series(covariate, as_of)
 
     if drop_incomplete:
-        return ts_sari[:-4], ts_are[:-4]  # only use complete data points
+        return ts_target[:-4], ts_covariates[:-4]  # only use complete data points
 
-    else:
-        return ts_sari, ts_are
+    return ts_target, ts_covariates
 
 
 def wait_for_data(interval_min=30, max_wait_hours=24):
@@ -251,7 +260,7 @@ def wait_for_data(interval_min=30, max_wait_hours=24):
         print(f"⏳ Not updated yet. Waiting {interval_min} minutes...")
         time.sleep(interval_min * 60)
         waited_min += interval_min
-        
+
 
 def download_latest_data():
     base = "https://raw.githubusercontent.com/KITmetricslab/RESPINOW-Hub/refs/heads/main/data"
@@ -263,9 +272,13 @@ def download_latest_data():
         "reporting_triangle-{}-{}-preprocessed.csv",
     ]
 
-    urls = [f"{base}/{src}/{disease}/{file.format(src, disease)}" for src, disease in sources for file in files]
+    urls = [
+        f"{base}/{src}/{disease}/{file.format(src, disease)}"
+        for src, disease in sources
+        for file in files
+    ]
 
     for u in urls:
         pd.read_csv(u).to_csv(ROOT / f"data/{u.split('/')[-1]}", index=False)
-    
+
     print("✅ All files successfully downloaded.")
