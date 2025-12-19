@@ -160,8 +160,10 @@ subprocess.run(
             f'setwd("{(ROOT / "r").as_posix()}"); '
             "renv::activate(); "
             "renv::restore(prompt = FALSE); "
-            'renv::run("nowcasting/nowcasting.R", args = c("are")); '
-            'renv::run("hhh4/hhh4_default.R", args = c("are"))'
+            f'renv::run("nowcasting/nowcasting.R", '
+            f'args = c("--disease=are", "--forecast_date={forecast_date}")); '
+            f'renv::run("hhh4/hhh4_default.R", '
+            f'args = c("--disease=are", "--forecast_date={forecast_date}"))'
         ),
     ],
     cwd=ROOT,

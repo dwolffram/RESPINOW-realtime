@@ -20,15 +20,40 @@ shuffle_paths <- FALSE
 skip_last = FALSE
 
 
-# define data sources and disease:
-if (interactive()) {
-  # Running in RStudio → pick manually
-  disease <- "are"    # <- change here when testing
-} else {
-  # Running via Rscript → use CLI argument or default (e.g. Rscript nowcasting.R are)
-  args <- commandArgs(trailingOnly = TRUE) # Read command line arguments
-  disease <- ifelse(length(args) >= 1, args[1], "sari")
+# defaults
+disease <- "sari"
+forecast_dates0 <- Sys.Date() - 0:6
+forecast_dates <- forecast_dates0[weekdays(forecast_dates0) == "Thursday"]
+
+# Running via Rscript → use CLI argument (e.g. Rscript hhh4_default.R --disease=sari --forecast_date=2025-12-18)
+if (!interactive()) {
+  args <- commandArgs(trailingOnly = TRUE)
+
+  for (arg in args) {
+    if (grepl("^--disease=", arg)) {
+      disease <- sub("^--disease=", "", arg)
+    }
+
+    if (grepl("^--forecast_date=", arg)) {
+      forecast_dates <- as.Date(sub("^--forecast_date=", "", arg))
+    }
+  }
 }
+
+if (is.na(forecast_dates)) {
+  stop("forecast_date must be in YYYY-MM-DD format (e.g. 2025-12-18)")
+}
+
+
+# define data sources and disease:
+# if (interactive()) {
+#   # Running in RStudio → pick manually
+#   disease <- "are"    # <- change here when testing
+# } else {
+#   # Running via Rscript → use CLI argument or default (e.g. Rscript nowcasting.R are)
+#   args <- commandArgs(trailingOnly = TRUE) # Read command line arguments
+#   disease <- ifelse(length(args) >= 1, args[1], "sari")
+# }
 
 # map disease → data_source
 data_source <- switch(
@@ -40,6 +65,7 @@ data_source <- switch(
 
 message("Disease: ", disease)
 message("Data source: ", data_source)
+message("Forecast date: ", forecast_dates)
 
 ######################################################
 # get packages and functions:

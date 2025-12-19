@@ -135,8 +135,10 @@ subprocess.run(
             f'setwd("{(ROOT / "r").as_posix()}"); '
             "renv::activate(); "
             "renv::restore(prompt = FALSE); "
-            'source("nowcasting/nowcasting.R"); '
-            'source("hhh4/hhh4_default.R")'
+            f'renv::run("nowcasting/nowcasting.R", '
+            f'args = c("--disease=sari", "--forecast_date={forecast_date}")); '
+            f'renv::run("hhh4/hhh4_default.R", '
+            f'args = c("--disease=sari", "--forecast_date={forecast_date}"))'
         ),
     ],
     cwd=ROOT,
@@ -150,9 +152,9 @@ commit_and_push(realtime_repo, "forecasts", HHH4_MSG)
 # --- connect to GitHub ---
 hub_fork, hub_repo = connect_repos()
 
-# ==========================================================================
-# 1) Submit NOWCASTS
-# ==========================================================================
+# # ==========================================================================
+# # 1) Submit NOWCASTS
+# # ==========================================================================
 sync_fork(hub_fork)
 create_branch(hub_fork, NOWCAST_BRANCH)
 
@@ -170,9 +172,9 @@ pr_body = (
 )
 open_pr(hub_repo, hub_fork, NOWCAST_BRANCH, NOWCAST_MSG, pr_body)
 
-# ==========================================================================
-# 2) Submit HHH4 forecasts
-# ==========================================================================
+# # ==========================================================================
+# # 2) Submit HHH4 forecasts
+# # ==========================================================================
 sync_fork(hub_fork)
 create_branch(hub_fork, HHH4_BRANCH)
 
@@ -186,9 +188,9 @@ write_file_to_branch(hub_fork, HHH4_BRANCH, hhh4_out, content, HHH4_MSG)
 pr_body = f"Automated submission from RESPINOW-realtime.\n\nAdds the **KIT-hhh4** forecasts for {forecast_date}."
 open_pr(hub_repo, hub_fork, HHH4_BRANCH, HHH4_MSG, pr_body)
 
-# ==========================================================================
-# 3) ML forecasts
-# ==========================================================================
+# # ==========================================================================
+# # 3) ML forecasts
+# # ==========================================================================
 generate_forecasts("lightgbm", forecast_date, data_mode="no_covariates", modes="coupling")
 generate_forecasts("tsmixer", forecast_date, data_mode="no_covariates", modes="coupling")
 
