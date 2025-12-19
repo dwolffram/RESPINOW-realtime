@@ -33,9 +33,10 @@ HHH4_BRANCH = f"hhh4/{forecast_date}"
 ML_BRANCH = f"submission/{forecast_date}"
 
 DATA_MSG = f"Update data for {forecast_date}"
-NOWCAST_MSG = f"Add nowcasts for {forecast_date}"
-HHH4_MSG = f"Add KIT-hhh4 forecasts for {forecast_date}"
-ML_MSG = f"Add KIT-LightGBM and KIT-TSMixer forecasts for {forecast_date}"
+NOWCAST_MSG = f"Add nowcasts for SARI ({forecast_date})"
+HHH4_MSG = f"Add KIT-hhh4 forecasts for SARI ({forecast_date})"
+ML_MSG = f"Add KIT-LightGBM and KIT-TSMixer forecasts for SARI ({forecast_date})"
+
 
 
 # ------------------------------------------------------------------------------

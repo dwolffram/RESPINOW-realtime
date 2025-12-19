@@ -165,7 +165,7 @@ def print_training_config(
     print(
         f"\n=== Training config ===\n"
         f"  model          : {model_name}\n"
-        f"  target          : {target}\n"
+        f"  target         : {target}\n"
         f"  use_covariates : {use_covariates}\n"
         f"  sample_weight  : {sample_weight}\n"
         f"  modes          : {list(modes)}\n"
@@ -240,7 +240,7 @@ def generate_forecasts(
 
     # ---- compute best params once
     params, wis = get_best_parameters(
-        model, use_covariates=use_covariates, sample_weight=sample_weight, clean=True, return_score=True
+        model, target, use_covariates=use_covariates, sample_weight=sample_weight, clean=True, return_score=True
     )
     use_encoders = params.pop("use_encoders", False)
 

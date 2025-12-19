@@ -35,9 +35,9 @@ HHH4_BRANCH = f"hhh4/are/{forecast_date}"
 ML_BRANCH = f"submission/are/{forecast_date}"
 
 DATA_MSG = f"Update data for {forecast_date}"
-NOWCAST_MSG = f"Add nowcasts for {forecast_date}"
-HHH4_MSG = f"Add KIT-hhh4 forecasts for {forecast_date}"
-ML_MSG = f"Add KIT-LightGBM and KIT-TSMixer forecasts for {forecast_date}"
+NOWCAST_MSG = f"Add nowcasts for ARE ({forecast_date})"
+HHH4_MSG = f"Add KIT-hhh4 forecasts for ARE ({forecast_date})"
+ML_MSG = f"Add KIT-LightGBM and KIT-TSMixer forecasts for ARE ({forecast_date})"
 
 
 # ------------------------------------------------------------------------------
@@ -204,9 +204,9 @@ pr_body = (
 )
 open_pr(hub_repo, hub_fork, NOWCAST_BRANCH, NOWCAST_MSG, pr_body)
 
-# # ==========================================================================
-# # 2) Submit HHH4 forecasts
-# # ==========================================================================
+# ==========================================================================
+# 2) Submit HHH4 forecasts
+# ==========================================================================
 sync_fork(hub_fork)
 create_branch(hub_fork, HHH4_BRANCH)
 
@@ -223,30 +223,30 @@ open_pr(hub_repo, hub_fork, HHH4_BRANCH, HHH4_MSG, pr_body)
 # # ==========================================================================
 # # 3) ML forecasts
 # # ==========================================================================
-# generate_forecasts("lightgbm", forecast_date, data_mode="no_covariates", modes="coupling")
-# generate_forecasts("tsmixer", forecast_date, data_mode="no_covariates", modes="coupling")
+generate_forecasts("lightgbm", forecast_date, target="are", data_mode="no_covariates", modes="coupling")
+generate_forecasts("tsmixer", forecast_date, target="are", data_mode="no_covariates", modes="coupling")
 
-# commit_and_push(realtime_repo, "forecasts", ML_MSG)
+commit_and_push(realtime_repo, "forecasts", ML_MSG)
 
-# sync_fork(hub_fork)
-# create_branch(hub_fork, ML_BRANCH)
+sync_fork(hub_fork)
+create_branch(hub_fork, ML_BRANCH)
 
-# for model, name in [
-#     ("lightgbm", "KIT-LightGBM"),
-#     ("tsmixer", "KIT-TSMixer"),
-# ]:
-#     ml_in = (
-#         ROOT
-#         / f"forecasts/{model}-no_covariates-coupling/{forecast_date}-icosari-sari-{model}-no_covariates-coupling.csv"
-#     )
-#     ml_out = f"submissions/icosari/sari/{name}/{forecast_date}-icosari-sari-{name}.csv"
+for model, name in [
+    ("lightgbm", "KIT-LightGBM"),
+    ("tsmixer", "KIT-TSMixer"),
+]:
+    ml_in = (
+        ROOT
+        / f"forecasts/{model}-no_covariates-coupling/{forecast_date}-agi-are-{model}-no_covariates-coupling.csv"
+    )
+    ml_out = f"submissions/agi/are/{name}/{forecast_date}-agi-are-{name}.csv"
 
-#     content = ml_in.read_text()
+    content = ml_in.read_text()
 
-#     write_file_to_branch(hub_fork, ML_BRANCH, ml_out, content, ML_MSG)
+    write_file_to_branch(hub_fork, ML_BRANCH, ml_out, content, ML_MSG)
 
-# pr_body = (
-#     "Automated submission from RESPINOW-realtime.\n\n"
-#     f"Adds the **KIT-LightGBM** and **KIT-TSMixer** forecasts for {forecast_date}."
-# )
-# open_pr(hub_repo, hub_fork, ML_BRANCH, ML_MSG, pr_body)
+pr_body = (
+    "Automated submission from RESPINOW-realtime.\n\n"
+    f"Adds the **KIT-LightGBM** and **KIT-TSMixer** forecasts for {forecast_date}."
+)
+open_pr(hub_repo, hub_fork, ML_BRANCH, ML_MSG, pr_body)
