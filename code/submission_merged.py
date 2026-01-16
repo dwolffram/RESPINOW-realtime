@@ -53,7 +53,7 @@ def create_branch(fork_repo, branch):
     refname = f"refs/heads/{branch}"
 
     try:
-        fork_repo.get_git_ref(refname).delete()
+        fork_repo.get_git_ref(f"heads/{branch}").delete()
         print(f"Deleted old branch {branch}.")
     except GithubException as e:
         if e.status != 404:
