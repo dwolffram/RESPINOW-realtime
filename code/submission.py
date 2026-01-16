@@ -1,5 +1,7 @@
 import os
+from pathlib import Path
 import subprocess
+import time
 
 import pandas as pd
 from git import Repo
@@ -114,6 +116,26 @@ def commit_and_push(repo, path, message):
         print(f"📤 Committed & pushed: {message}")
     else:
         print(f"⚠️ No changes in {path} — skip.")
+        
+
+def wait_for_files(paths, timeout=300, interval=1):
+    """
+    Wait until all files in `paths` exist.
+    Raise TimeoutError after `timeout` seconds.
+    """
+    paths = [Path(p) for p in paths]
+    start = time.time()
+
+    while True:
+        missing = [p for p in paths if not p.exists()]
+        if not missing:
+            return  # all good
+
+        if time.time() - start > timeout:
+            missing_str = ", ".join(str(p) for p in missing)
+            raise TimeoutError(f"Files did not appear in time: {missing_str}")
+
+        time.sleep(interval)
 
 
 # ------------------------------------------------------------------------------
@@ -145,6 +167,13 @@ subprocess.run(
     cwd=ROOT,
     check=True,
 )
+
+# Expected output files
+nowcast_file = ROOT / "nowcasts"/ "simple_nowcast" / f"{forecast_date}-icosari-sari-simple_nowcast.csv"
+hhh4_file = ROOT / "forecasts"/ "hhh4-coupling" / f"{forecast_date}-icosari-sari-hhh4-coupling.csv"
+
+# --- Wait for both files (to avoid empty commits) ---
+wait_for_files([nowcast_file, hhh4_file], timeout=300, interval=2)
 
 # --- local commits (RESPINOW-realtime repo) ---
 commit_and_push(realtime_repo, "nowcasts", NOWCAST_MSG)
